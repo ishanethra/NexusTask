@@ -21,6 +21,35 @@ const MOCK_DB = JSON.parse(localStorage.getItem('mock_db_clean')) || {
 
 function saveMock() { localStorage.setItem('mock_db_clean', JSON.stringify(MOCK_DB)); }
 
+// Official Google Identity Services JWT Decoder
+function decodeJwtResponse(token) {
+  let base64Url = token.split('.')[1];
+  let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
+
+// Global Callback triggered automatically by Google Script
+window.handleGoogleCredentialResponse = async (response) => {
+    const payload = decodeJwtResponse(response.credential);
+    const email = payload.email;
+    
+    try {
+      const data = await api('/oauth', 'POST', { provider: 'Google', email });
+      currentUser = data.user;
+      currentToken = data.token;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+      localStorage.setItem('token', currentToken);
+      
+      renderApp();
+      showToast('Welcome! Signed in securely via Google.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+};
+
 // --- API CORE ---
 async function api(path, method = 'GET', body = null) {
   if (IS_FILE_PROTOCOL) return await mockApi(path, method, body);
@@ -379,35 +408,6 @@ window.onload = () => {
   
   $('btn-close-logs').onclick = () => hide('logs-modal');
   $('btn-view-logs').onclick = viewLogs;
-
-  // Official Google Identity Services JWT Decoder
-  function decodeJwtResponse(token) {
-    let base64Url = token.split('.')[1];
-    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  }
-
-  // Global Callback triggered automatically by Google Script
-  window.handleGoogleCredentialResponse = async (response) => {
-      const payload = decodeJwtResponse(response.credential);
-      const email = payload.email;
-      
-      try {
-        const data = await api('/oauth', 'POST', { provider: 'Google', email });
-        currentUser = data.user;
-        currentToken = data.token;
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        localStorage.setItem('token', currentToken);
-        
-        renderApp();
-        showToast('Welcome! Signed in securely via Google.', 'success');
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-  };
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {
