@@ -169,7 +169,7 @@ async function handleLogin(res, payload) {
   const token = generateToken({ id: user.id, email: user.email, role: user.role, orgId: user.orgId });
 
   res.writeHead(200);
-  res.end(JSON.stringify({ token, user: { email: user.email, role: user.role, orgName: org.name } }));
+  res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: org.name } }));
 }
 
 async function handleOAuth(res, payload) {
@@ -210,7 +210,7 @@ async function handleOAuth(res, payload) {
   const token = generateToken({ id: user.id, email: user.email, role: user.role, orgId: user.orgId });
 
   res.writeHead(200);
-  res.end(JSON.stringify({ token, user: { email: user.email, role: user.role, orgName: org.name } }));
+  res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: org.name } }));
 }
 
 async function handleTasks(req, res, segments, context, payload) {
