@@ -199,8 +199,16 @@ async function register() {
     }
 
     await api('/register', 'POST', { orgName, email, password });
-    showToast('Registration successful! Please login.', 'success');
-    showLoginForm();
+    
+    // Auto-login the user seamlessly
+    const data = await api('/login', 'POST', { email, password });
+    currentUser = data.user;
+    currentToken = data.token;
+    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem('token', data.token);
+    
+    renderApp();
+    showToast('Registration successful! You are now logged in.', 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -372,34 +380,34 @@ window.onload = () => {
   $('btn-close-logs').onclick = () => hide('logs-modal');
   $('btn-view-logs').onclick = viewLogs;
 
-  const handleOAuth = (provider) => {
-    // Open the authentic popup redirect simulation
-    const width = 450;
-    const height = 600;
-    const left = (window.innerWidth / 2) - (width / 2);
-    const top = (window.innerHeight / 2) - (height / 2);
-    window.open(`oauth-mock.html?provider=${provider}`, 'OAuth_SignIn', `width=${width},height=${height},top=${top},left=${left}`);
-  };
+  // Official Google Identity Services JWT Decoder
+  function decodeJwtResponse(token) {
+    let base64Url = token.split('.')[1];
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  }
 
-  window.addEventListener('message', async (event) => {
-    if (event.data && event.data.oauth) {
-      const { provider, email } = event.data;
+  // Global Callback triggered automatically by Google Script
+  window.handleGoogleCredentialResponse = async (response) => {
+      const payload = decodeJwtResponse(response.credential);
+      const email = payload.email;
+      
       try {
-        const data = await api('/oauth', 'POST', { provider, email });
+        const data = await api('/oauth', 'POST', { provider: 'Google', email });
         currentUser = data.user;
         currentToken = data.token;
         localStorage.setItem('user', JSON.stringify(currentUser));
         localStorage.setItem('token', currentToken);
         
         renderApp();
-        showToast(`Welcome! Signed in via ${provider} as ${email}`, 'success');
+        showToast('Welcome! Signed in securely via Google.', 'success');
       } catch (err) {
         showToast(err.message, 'error');
       }
-    }
-  });
-
-  $('btn-google').onclick = () => handleOAuth('Google');
+  };
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {
