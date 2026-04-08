@@ -31,24 +31,30 @@ function decodeJwtResponse(token) {
   return JSON.parse(jsonPayload);
 }
 
-// Global Callback triggered automatically by Google Script
-window.handleGoogleCredentialResponse = async (response) => {
+// Event listener for the Google Identity bridge in index.html
+window.addEventListener('google-oauth', async (event) => {
+    console.log('📦 Google OAuth event received', event.detail);
+    const response = event.detail;
     const payload = decodeJwtResponse(response.credential);
     const email = payload.email;
     
     try {
+      showToast('Authenticating with Google...', 'success');
       const data = await api('/oauth', 'POST', { provider: 'Google', email });
+      console.log('✅ Google Authentication success', data);
+      
       currentUser = data.user;
       currentToken = data.token;
       localStorage.setItem('user', JSON.stringify(currentUser));
       localStorage.setItem('token', currentToken);
       
       renderApp();
-      showToast('Welcome! Signed in securely via Google.', 'success');
+      showToast('Signed in successfully!', 'success');
     } catch (err) {
+      console.error('❌ Google Authentication failed', err);
       showToast(err.message, 'error');
     }
-};
+});
 
 // --- API CORE ---
 async function api(path, method = 'GET', body = null) {
@@ -167,9 +173,15 @@ async function mockApi(path, method, body) {
 }
 
 // --- UTILS ---
-const $ = id => document.getElementById(id);
-const hide = id => $(id).classList.add('hidden');
-const show = id => $(id).classList.remove('hidden');
+function $(id) { return document.getElementById(id); }
+function hide(id) { 
+  const el = $(id);
+  if (el) el.classList.add('hidden'); 
+}
+function show(id) { 
+  const el = $(id);
+  if (el) el.classList.remove('hidden'); 
+}
 
 function validateEmail(email) {
   return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);

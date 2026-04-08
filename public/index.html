@@ -8,6 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      // Global bridge for Google Identity Services - Defined here to prevent race conditions
+      function handleGoogleCredentialResponse(response) {
+        window.dispatchEvent(new CustomEvent('google-oauth', { detail: response }));
+      }
+    </script>
     <script src="https://accounts.google.com/gsi/client" async></script>
 </head>
 <body>
