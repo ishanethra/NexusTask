@@ -6,7 +6,7 @@ const { read, write, ensureDataDir } = require('./db');
 const { hashPassword, generateToken, verifyToken } = require('./auth');
 
 const PORT = process.env.PORT || 3035;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = '0.0.0.0';
 
 async function startServer() {
   await ensureDataDir();
