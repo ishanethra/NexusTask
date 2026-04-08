@@ -255,6 +255,36 @@ async function register() {
   }
 }
 
+async function requestPasswordReset() {
+  const email = $('forgot-email').value;
+  if (!email) return showToast('Email is required', 'error');
+  
+  try {
+    const data = await api('/forgot-password', 'POST', { email });
+    showToast(data.message, 'success');
+    showResetPasswordForm();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function confirmPasswordReset() {
+  const email = $('forgot-email').value;
+  const key = $('reset-key').value;
+  const newPassword = $('reset-new-password').value;
+  
+  if (!key || !newPassword) return showToast('Key and New Password are required', 'error');
+  if (!validatePassword(newPassword)) return showToast('Password must be 8+ characters with a number', 'error');
+
+  try {
+    const data = await api('/reset-password', 'POST', { email, key, newPassword });
+    showToast(data.message, 'success');
+    showLoginForm();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
 function logout() {
   currentUser = null;
   currentToken = null;
@@ -343,13 +373,31 @@ function renderApp() {
   }
 }
 
+function showForgotPasswordForm() {
+  hide('login-form');
+  hide('register-form');
+  show('forgot-password-form');
+  hide('reset-password-form');
+}
+
+function showResetPasswordForm() {
+  hide('login-form');
+  hide('register-form');
+  hide('forgot-password-form');
+  show('reset-password-form');
+}
+
 function showLoginForm() {
   hide('register-form');
+  hide('forgot-password-form');
+  hide('reset-password-form');
   show('login-form');
 }
 
 function showRegisterForm() {
   hide('login-form');
+  hide('forgot-password-form');
+  hide('reset-password-form');
   show('register-form');
 }
 
@@ -417,9 +465,14 @@ window.onload = () => {
   $('btn-cancel-task').onclick = closeTaskModal;
   $('btn-save-task').onclick = saveTask;
   $('btn-delete-task').onclick = deleteTask;
-  
   $('btn-close-logs').onclick = () => hide('logs-modal');
   $('btn-view-logs').onclick = viewLogs;
+
+  // Recovery Events
+  $('show-forgot-pass').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
+  $('back-to-login').onclick = e => { e.preventDefault(); showLoginForm(); };
+  $('btn-send-reset').onclick = requestPasswordReset;
+  $('btn-reset-confirm').onclick = confirmPasswordReset;
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {

@@ -64,6 +64,12 @@ async function startServer() {
         if (req.method === 'POST' && requestPath === '/api/oauth') {
           return await handleOAuth(res, payload);
         }
+        if (req.method === 'POST' && requestPath === '/api/forgot-password') {
+          return await handleForgotPassword(res, payload);
+        }
+        if (req.method === 'POST' && requestPath === '/api/reset-password') {
+          return await handleResetPassword(res, payload);
+        }
 
         // --- PROTECTED ROUTES ---
         if (!context.user) {
@@ -211,6 +217,57 @@ async function handleOAuth(res, payload) {
 
   res.writeHead(200);
   res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: org.name } }));
+}
+
+async function handleForgotPassword(res, payload) {
+  const { email } = payload;
+  const users = await read('users');
+  const user = users.find(u => u.email === email);
+
+  if (!user) {
+    // Security: Don't reveal if user exists. 
+    // But for demo purposes, we can provide a nice message.
+    res.writeHead(200);
+    return res.end(JSON.stringify({ message: 'If that email is registered, you will receive a code.' }));
+  }
+
+  const resetKey = Math.floor(100000 + Math.random() * 900000).toString();
+  const tokens = await read('recovery_tokens');
+  tokens.push({ email, key: resetKey, expires: Date.now() + 3600000 }); // 1 hour
+  await write('recovery_tokens', tokens);
+
+  // In a real app, this would be an email. 
+  // For this demo, we "leak" it in the UI success message for the user.
+  res.writeHead(200);
+  res.end(JSON.stringify({ 
+    message: `Recovery key sent! (DEMO MODE: Your key is ${resetKey})`,
+    demoKey: resetKey 
+  }));
+}
+
+async function handleResetPassword(res, payload) {
+  const { email, key, newPassword } = payload;
+  const tokens = await read('recovery_tokens');
+  const tokenIndex = tokens.findIndex(t => t.email === email && t.key === key && t.expires > Date.now());
+
+  if (tokenIndex === -1) {
+    res.writeHead(400);
+    return res.end(JSON.stringify({ error: 'Invalid or expired recovery key.' }));
+  }
+
+  const users = await read('users');
+  const user = users.find(u => u.email === email);
+  if (user) {
+    user.password = hashPassword(newPassword);
+    await write('users', users);
+  }
+
+  // Clear the used token
+  tokens.splice(tokenIndex, 1);
+  await write('recovery_tokens', tokens);
+
+  res.writeHead(200);
+  res.end(JSON.stringify({ message: 'Password reset successful. Please login.' }));
 }
 
 async function handleTasks(req, res, segments, context, payload) {
