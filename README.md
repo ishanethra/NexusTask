@@ -63,5 +63,3 @@ To demonstrate **Password Recovery** without requiring a live SMTP server:
 
 ## ✅ Compliance & Performance Docs
 This platform has been rigorously tested against strict multi-tenant boundary scenarios to prevent resource leakage, privilege escalation, and cross-site request forgery.
-
-*Developed for the Advanced Software Engineering Evaluation.*
