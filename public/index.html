@@ -117,6 +117,32 @@
                     </div>
                     <button id="btn-reset-confirm" style="margin-bottom: 1rem;">Update Password</button>
                 </div>
+
+                <!-- Check Your Email Transition Screen -->
+                <div id="check-email-screen" class="hidden">
+                    <h2 style="margin-bottom: 1.5rem; text-align: center;">📩 Check Your Email</h2>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; text-align: center;">We have sent a 6-digit security key to your email. Please use it to reset your password.</p>
+                    <button id="btn-to-reset-form" style="margin-bottom: 1rem;">I have the key</button>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+                        Didn't get an email? <a href="#" id="retry-recovery" style="color: var(--accent);">Try again</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Demo Inbox Button -->
+        <button id="btn-demo-inbox" style="position: fixed; bottom: 1.5rem; left: 1.5rem; width: auto; font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 2rem; background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            📬 Demo Inbox <span id="inbox-count" style="background: var(--accent); color: white; border-radius: 50%; padding: 0.1rem 0.4rem; font-size: 0.7rem; margin-left: 0.3rem; display: none;">0</span>
+        </button>
+
+        <!-- Demo Inbox Modal -->
+        <div id="demo-inbox-modal" class="modal-overlay hidden" style="z-index: 2000;">
+            <div class="modal glass fade-in" style="max-width: 500px;">
+                <h2 style="margin-bottom: 1.5rem;">Virtual Mail Inbox 📩</h2>
+                <div id="inbox-messages" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                    <!-- Demo emails will be injected here -->
+                </div>
+                <button id="btn-close-inbox" class="secondary">Close Inbox</button>
             </div>
         </div>
 

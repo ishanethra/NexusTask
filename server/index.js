@@ -61,6 +61,11 @@ async function startServer() {
         if (req.method === 'POST' && requestPath === '/api/login') {
           return await handleLogin(res, payload);
         }
+        if (req.method === 'GET' && requestPath === '/api/demo/emails') {
+          const tokens = await read('recovery_tokens');
+          res.writeHead(200);
+          return res.end(JSON.stringify(tokens));
+        }
         if (req.method === 'POST' && requestPath === '/api/oauth') {
           return await handleOAuth(res, payload);
         }

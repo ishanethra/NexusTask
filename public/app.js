@@ -261,10 +261,52 @@ async function requestPasswordReset() {
   
   try {
     const data = await api('/forgot-password', 'POST', { email });
-    showToast(data.message, 'success');
-    showResetPasswordForm();
+    showToast('Reset request received!', 'success');
+    showCheckEmailScreen();
+    refreshInboxCount();
   } catch (err) {
     showToast(err.message, 'error');
+  }
+}
+
+async function refreshInboxCount() {
+  try {
+    const emails = await api('/demo/emails');
+    const count = emails.length;
+    $('inbox-count').innerText = count;
+    $('inbox-count').style.display = count > 0 ? 'inline-block' : 'none';
+  } catch (err) {
+    console.error('Failed to fetch inbox count');
+  }
+}
+
+async function viewDemoInbox() {
+  show('demo-inbox-modal');
+  const container = $('inbox-messages');
+  container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Loading mailbox...</p>';
+  
+  try {
+    const emails = await api('/demo/emails');
+    if (emails.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-muted);">Your inbox is empty.</p>';
+      return;
+    }
+    
+    container.innerHTML = emails.map(mail => `
+      <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid var(--glass-border);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+          <strong style="color: var(--accent);">NexusTask Security</strong>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Just now</span>
+        </div>
+        <p style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Subject:</strong> Password Recovery Code</p>
+        <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.25rem; font-family: monospace; font-size: 1.1rem; border: 1px dashed var(--accent);">
+          Hello, your security code is: <b style="color: white; letter-spacing: 2px;">${mail.key}</b>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Sent to: ${mail.email}</p>
+      </div>
+    `).reverse().join('');
+  } catch (err) {
+    container.innerHTML = '<p style="color: #ef4444; text-align: center;">Error loading inbox.</p>';
   }
 }
 
@@ -378,6 +420,15 @@ function showForgotPasswordForm() {
   hide('register-form');
   show('forgot-password-form');
   hide('reset-password-form');
+  hide('check-email-screen');
+}
+
+function showCheckEmailScreen() {
+  hide('login-form');
+  hide('register-form');
+  hide('forgot-password-form');
+  hide('reset-password-form');
+  show('check-email-screen');
 }
 
 function showResetPasswordForm() {
@@ -385,12 +436,14 @@ function showResetPasswordForm() {
   hide('register-form');
   hide('forgot-password-form');
   show('reset-password-form');
+  hide('check-email-screen');
 }
 
 function showLoginForm() {
   hide('register-form');
   hide('forgot-password-form');
   hide('reset-password-form');
+  hide('check-email-screen');
   show('login-form');
 }
 
@@ -398,6 +451,7 @@ function showRegisterForm() {
   hide('login-form');
   hide('forgot-password-form');
   hide('reset-password-form');
+  hide('check-email-screen');
   show('register-form');
 }
 
@@ -473,6 +527,15 @@ window.onload = () => {
   $('back-to-login').onclick = e => { e.preventDefault(); showLoginForm(); };
   $('btn-send-reset').onclick = requestPasswordReset;
   $('btn-reset-confirm').onclick = confirmPasswordReset;
+  
+  // Virtual Inbox Events
+  $('btn-demo-inbox').onclick = viewDemoInbox;
+  $('btn-close-inbox').onclick = () => hide('demo-inbox-modal');
+  $('btn-to-reset-form').onclick = showResetPasswordForm;
+  $('retry-recovery').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
+
+  // Initial Check
+  refreshInboxCount();
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {
