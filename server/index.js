@@ -310,12 +310,12 @@ async function handleTasks(req, res, segments, context, payload) {
 
   if (USE_SQL) {
     if (req.method === 'GET') {
-      const data = await query('SELECT t.*, u.email as "creatorEmail", t.created_at as "createdAt" FROM tasks t JOIN users u ON t.created_by = u.id WHERE t.org_id = $1 ORDER BY t.created_at DESC', [user.orgId]);
+      const data = await query('SELECT t.*, u.email as "creatorEmail", t.created_at as "createdAt", t.created_by as "createdBy" FROM tasks t JOIN users u ON t.created_by = u.id WHERE t.org_id = $1 ORDER BY t.created_at DESC', [user.orgId]);
       res.writeHead(200); return res.end(JSON.stringify(data.rows));
     }
     if (req.method === 'POST') {
       const { title, description, status } = payload;
-      const data = await query('INSERT INTO tasks (title, description, status, org_id, created_by, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *, created_at as "createdAt"', [title, description, status || 'TODO', user.orgId, user.id]);
+      const data = await query('INSERT INTO tasks (title, description, status, org_id, created_by, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *, created_at as "createdAt", created_by as "createdBy"', [title, description, status || 'TODO', user.orgId, user.id]);
       const task = { ...data.rows[0], creatorEmail: user.email };
       await logAction(user, 'CREATE_TASK', task.id);
       res.writeHead(201); return res.end(JSON.stringify(task));
@@ -355,7 +355,8 @@ async function handleTasks(req, res, segments, context, payload) {
   }
 
   // RBAC for JSON: Admin or Creator only
-  const canModify = user.role === 'ADMIN' || task.createdBy === user.id;
+  const creatorId = task.createdBy || task.created_by;
+  const canModify = user.role === 'ADMIN' || creatorId === user.id;
 
   if (req.method === 'PUT') {
     if (!canModify) { res.writeHead(403); return res.end(JSON.stringify({ error: 'Forbidden' })); }
