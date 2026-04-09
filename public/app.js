@@ -16,7 +16,8 @@ const hashSim = str => btoa('salt-' + str).split('').reverse().join('');
 const MOCK_DB = JSON.parse(localStorage.getItem('mock_db_clean')) || {
   users: [],
   tasks: [],
-  logs: []
+  logs: [],
+  recovery_tokens: []
 };
 
 function saveMock() { localStorage.setItem('mock_db_clean', JSON.stringify(MOCK_DB)); }
@@ -169,6 +170,29 @@ async function mockApi(path, method, body) {
   
   if (path === '/logs') return MOCK_DB.logs.filter(l => l.orgId === currentUser.orgId);
   
+  if (path === '/forgot-password') {
+    const user = MOCK_DB.users.find(u => u.email === body.email);
+    if (!user) return { message: 'If that email is registered, you will receive a code.' };
+    const key = Math.floor(100000 + Math.random() * 900000).toString();
+    MOCK_DB.recovery_tokens.push({ email: body.email, key, expires: Date.now() + 3600000 });
+    saveMock();
+    return { message: `Recovery key sent! (DEMO MODE: Your key is ${key})`, demoKey: key };
+  }
+
+  if (path === '/reset-password') {
+    const tokenIndex = MOCK_DB.recovery_tokens.findIndex(t => t.email === body.email && t.key === body.key);
+    if (tokenIndex === -1) throw new Error('Invalid or expired recovery key.');
+    const user = MOCK_DB.users.find(u => u.email === body.email);
+    if (user) user.password = hashSim(body.newPassword);
+    MOCK_DB.recovery_tokens.splice(tokenIndex, 1);
+    saveMock();
+    return { message: 'Password reset successful' };
+  }
+
+  if (path === '/demo/emails') {
+    return [...MOCK_DB.recovery_tokens].reverse();
+  }
+  
   throw new Error('Not implemented in Mock Mode');
 }
 
@@ -263,7 +287,7 @@ async function requestPasswordReset() {
     const data = await api('/forgot-password', 'POST', { email });
     showToast('Reset request received!', 'success');
     showCheckEmailScreen();
-    refreshInboxCount();
+    setTimeout(refreshInboxCount, 500); // Immediate check
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -530,12 +554,14 @@ window.onload = () => {
   
   // Virtual Inbox Events
   $('btn-demo-inbox').onclick = viewDemoInbox;
+  $('btn-refresh-inbox').onclick = viewDemoInbox;
   $('btn-close-inbox').onclick = () => hide('demo-inbox-modal');
   $('btn-to-reset-form').onclick = showResetPasswordForm;
   $('retry-recovery').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
 
-  // Initial Check
-  refreshInboxCount();
+  // Background Polling for Virtual Inbox
+  setInterval(refreshInboxCount, 5000); // Check every 5s
+  refreshInboxCount(); // Initial Check
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {
