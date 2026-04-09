@@ -1,8 +1,6 @@
-const http = require('http');
-const { exec } = require('child_process');
-const fs = require('fs').promises;
 const path = require('path');
-const { read, write, ensureDataDir } = require('./db');
+const crypto = require('crypto');
+const { read, write, ensureDataDir, query, USE_SQL } = require('./db');
 const { hashPassword, generateToken, verifyToken } = require('./auth');
 
 const PORT = process.env.PORT || 3035;
@@ -89,14 +87,7 @@ async function startServer() {
 
         // --- AUDIT LOGS ---
         if (req.method === 'GET' && requestPath === '/api/logs') {
-          if (context.user.role !== 'ADMIN') {
-            res.writeHead(403);
-            return res.end(JSON.stringify({ error: 'Access Denied' }));
-          }
-          const logs = await read('logs');
-          const orgLogs = logs.filter(l => l.orgId === context.user.orgId);
-          res.writeHead(200);
-          return res.end(JSON.stringify(orgLogs));
+          return await handleLogs(res, context);
         }
 
         res.writeHead(404);
@@ -130,6 +121,41 @@ async function getContext(req) {
 
 async function handleRegister(res, payload) {
   const { email, password, orgName, role } = payload;
+  
+  if (USE_SQL) {
+    try {
+      // 1. Find or Create Organization
+      let orgRes = await query('SELECT id FROM organizations WHERE LOWER(name) = LOWER($1)', [orgName]);
+      let orgId;
+      if (orgRes.rows.length === 0) {
+        let newOrg = await query('INSERT INTO organizations (name) VALUES ($1) RETURNING id', [orgName]);
+        orgId = newOrg.rows[0].id;
+      } else {
+        orgId = orgRes.rows[0].id;
+      }
+
+      // 2. Check User existence
+      let userCheck = await query('SELECT id FROM users WHERE email = $1', [email]);
+      if (userCheck.rows.length > 0) {
+        res.writeHead(400);
+        return res.end(JSON.stringify({ error: 'Email already exists' }));
+      }
+
+      // 3. Register User (First user in org gets ADMIN)
+      let adminCheck = await query('SELECT id FROM users WHERE org_id = $1 AND role = \'ADMIN\'', [orgId]);
+      const finalRole = adminCheck.rows.length === 0 ? 'ADMIN' : (role || 'MEMBER');
+      
+      await query('INSERT INTO users (email, password_hash, org_id, role) VALUES ($1, $2, $3, $4)', 
+        [email, hashPassword(password), orgId, finalRole]);
+
+      res.writeHead(201);
+      return res.end(JSON.stringify({ message: 'Registration successful' }));
+    } catch (err) {
+      console.error('SQL Error during registration:', err);
+      throw err;
+    }
+  }
+
   const users = await read('users');
   const orgs = await read('organizations');
 
@@ -167,13 +193,32 @@ async function handleRegister(res, payload) {
 
 async function handleLogin(res, payload) {
   const { email, password } = payload;
+  
+  if (USE_SQL) {
+    const resSql = await query(`
+      SELECT u.*, o.name as "orgName" 
+      FROM users u 
+      JOIN organizations o ON u.org_id = o.id 
+      WHERE u.email = $1`, [email]);
+    
+    const user = resSql.rows[0];
+    if (!user || user.password_hash !== hashPassword(password)) {
+      res.writeHead(401);
+      return res.end(JSON.stringify({ error: 'Invalid email or password' }));
+    }
+
+    const token = generateToken({ id: user.id, email: user.email, role: user.role, orgId: user.org_id });
+    res.writeHead(200);
+    return res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: user.orgName } }));
+  }
+
   const users = await read('users');
   const orgs = await read('organizations');
-
   const user = users.find(u => u.email === email && u.password === hashPassword(password));
+
   if (!user) {
     res.writeHead(401);
-    return res.end(JSON.stringify({ error: 'Invalid credentials' }));
+    return res.end(JSON.stringify({ error: 'Invalid email or password' }));
   }
 
   const org = orgs.find(o => o.id === user.orgId);
@@ -184,10 +229,42 @@ async function handleLogin(res, payload) {
 }
 
 async function handleOAuth(res, payload) {
-  const { provider, email } = payload;
+  const { email } = payload;
+  
+  if (USE_SQL) {
+    let orgRes = await query('SELECT u.*, o.name as "orgName" FROM users u JOIN organizations o ON u.org_id = o.id WHERE u.email = $1', [email]);
+    let user = orgRes.rows[0];
+
+    if (!user) {
+      const domain = email.split('@')[1] || 'google.com';
+      const company = domain.split('.')[0].toUpperCase();
+      
+      let orgLookup = await query('SELECT id FROM organizations WHERE LOWER(name) = LOWER($1)', [company]);
+      let orgId;
+      if (orgLookup.rows.length === 0) {
+        let newOrg = await query('INSERT INTO organizations (name) VALUES ($1) RETURNING id', [company]);
+        orgId = newOrg.rows[0].id;
+      } else {
+        orgId = orgLookup.rows[0].id;
+      }
+
+      let adminCheck = await query('SELECT id FROM users WHERE org_id = $1 AND role = \'ADMIN\'', [orgId]);
+      const role = adminCheck.rows.length === 0 ? 'ADMIN' : 'MEMBER';
+      
+      let newUser = await query('INSERT INTO users (email, password_hash, org_id, role) VALUES ($1, $2, $3, $4) RETURNING *', 
+        [email, hashPassword('oauth-placeholder'), orgId, role]);
+      
+      user = newUser.rows[0];
+      user.orgName = company;
+    }
+
+    const token = generateToken({ id: user.id, email: user.email, role: user.role, orgId: user.org_id });
+    res.writeHead(200);
+    return res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: user.orgName } }));
+  }
+
   const users = await read('users');
   const orgs = await read('organizations');
-
   let user = users.find(u => u.email === email);
 
   if (!user) {
@@ -226,6 +303,19 @@ async function handleOAuth(res, payload) {
 
 async function handleForgotPassword(res, payload) {
   const { email } = payload;
+  
+  if (USE_SQL) {
+    const user = await query('SELECT id FROM users WHERE email = $1', [email]);
+    if (user.rows.length === 0) {
+      res.writeHead(404);
+      return res.end(JSON.stringify({ error: 'No account found with this email address.' }));
+    }
+    const resetKey = Math.floor(100000 + Math.random() * 900000).toString();
+    await query('INSERT INTO recovery_tokens (email, key, expires) VALUES ($1, $2, $3)', [email, resetKey, Date.now() + 3600000]);
+    res.writeHead(200);
+    return res.end(JSON.stringify({ message: `Recovery key sent! (DEMO MODE: Your key is ${resetKey})`, demoKey: resetKey }));
+  }
+
   const users = await read('users');
   const user = users.find(u => u.email === email);
 
@@ -250,6 +340,19 @@ async function handleForgotPassword(res, payload) {
 
 async function handleResetPassword(res, payload) {
   const { email, key, newPassword } = payload;
+  
+  if (USE_SQL) {
+    const tokenRes = await query('SELECT * FROM recovery_tokens WHERE email = $1 AND key = $2 AND expires > $3', [email, key, Date.now()]);
+    if (tokenRes.rows.length === 0) {
+      res.writeHead(400);
+      return res.end(JSON.stringify({ error: 'Invalid or expired recovery key.' }));
+    }
+    await query('UPDATE users SET password_hash = $1 WHERE email = $2', [hashPassword(newPassword), email]);
+    await query('DELETE FROM recovery_tokens WHERE id = $1', [tokenRes.rows[0].id]);
+    res.writeHead(200);
+    return res.end(JSON.stringify({ message: 'Password reset successful. Please login.' }));
+  }
+
   const tokens = await read('recovery_tokens');
   const tokenIndex = tokens.findIndex(t => t.email === email && t.key === key && t.expires > Date.now());
 
@@ -274,12 +377,54 @@ async function handleResetPassword(res, payload) {
 }
 
 async function handleTasks(req, res, segments, context, payload) {
-  const tasks = await read('tasks');
   const { user } = context;
   const taskId = segments[2];
 
-  // Filter Tasks by Organization (Tenant Isolation)
-  const orgTasks = tasks.filter(t => t.orgId === user.orgId);
+  if (USE_SQL) {
+    if (req.method === 'GET') {
+      const tasks = await query('SELECT * FROM tasks WHERE org_id = $1 ORDER BY created_at DESC', [user.orgId]);
+      res.writeHead(200);
+      return res.end(JSON.stringify(tasks.rows));
+    }
+
+    if (req.method === 'POST') {
+      const { title, description, status } = payload;
+      const resTask = await query('INSERT INTO tasks (org_id, created_by, title, description, status) VALUES ($1, $2, $3, $4, $5) RETURNING *', 
+        [user.orgId, user.id, title, description, status || 'TODO']);
+      await logAction(user.orgId, user.id, 'CREATE_TASK', { taskId: resTask.rows[0].id, title });
+      res.writeHead(201);
+      return res.end(JSON.stringify(resTask.rows[0]));
+    }
+
+    if (req.method === 'PUT') {
+      const { title, description, status } = payload;
+      // RBAC: Check ownership if not ADMIN
+      const check = await query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+      if (check.rows.length === 0) { res.writeHead(404); return res.end(); }
+      if (user.role !== 'ADMIN' && check.rows[0].created_by !== user.id) {
+        res.writeHead(403); return res.end(JSON.stringify({ error: 'Forbidden: You can only edit your own tasks' }));
+      }
+      const updated = await query('UPDATE tasks SET title = $1, description = $2, status = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
+        [title, description, status, taskId]);
+      await logAction(user.orgId, user.id, 'UPDATE_TASK', { taskId, title });
+      res.writeHead(200);
+      return res.end(JSON.stringify(updated.rows[0]));
+    }
+
+    if (req.method === 'DELETE') {
+      const check = await query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+      if (check.rows.length === 0) { res.writeHead(404); return res.end(); }
+      if (user.role !== 'ADMIN' && check.rows[0].created_by !== user.id) {
+        res.writeHead(403); return res.end(JSON.stringify({ error: 'Forbidden: You can only delete your own tasks' }));
+      }
+      await query('DELETE FROM tasks WHERE id = $1', [taskId]);
+      await logAction(user.orgId, user.id, 'DELETE_TASK', { taskId });
+      res.writeHead(200);
+      return res.end(JSON.stringify({ message: 'Task deleted' }));
+    }
+  }
+
+  const tasks = await read('tasks');
 
   if (req.method === 'GET') {
     res.writeHead(200);

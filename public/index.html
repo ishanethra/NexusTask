@@ -152,8 +152,11 @@
         <div id="dashboard-section" class="hidden fade-in">
             <header class="glass">
                 <div>
-                    <h1>NexusTask</h1>
-                    <p id="user-info" style="font-size: 0.875rem; color: var(--text-muted);"></p>
+                    <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">NexusTask</h1>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span id="org-name-display" style="background: var(--accent); color: white; padding: 0.1rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">Organization</span>
+                        <span id="user-email-display" style="font-size: 0.875rem; color: var(--text-muted);">name@company.com</span>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     <button id="btn-add-task" style="width: auto;">+ New Task</button>
@@ -161,9 +164,9 @@
                 </div>
             </header>
 
-            <div id="admin-tools" class="hidden" style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 1rem; background: rgba(109, 40, 217, 0.1); border: 1px solid rgba(109, 40, 217, 0.2);">
-                <h3 style="margin-bottom: 0.5rem;">Admin Dashboard</h3>
-                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Manage tasks and view organizational audit logs.</p>
+            <div id="admin-controls" class="hidden" style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 1rem; background: rgba(109, 40, 217, 0.1); border: 1px solid rgba(109, 40, 217, 0.2);">
+                <h3 style="margin-bottom: 0.5rem; color: white;">🛡️ Admin Dashboard</h3>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">NexusTask Multi-Tenant Oversight Enabled.</p>
                 <div style="display: flex; gap: 1rem;">
                     <button id="btn-view-logs" class="secondary" style="width: auto; font-size: 0.8rem;">View Audit Logs</button>
                 </div>

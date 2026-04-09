@@ -426,15 +426,20 @@ function renderApp() {
   if (currentUser) {
     hide('auth-section');
     show('dashboard-section');
-    $('user-info').innerText = `${currentUser.email} | ${currentUser.orgName} (${currentUser.role})`;
+    $('user-email-display').innerText = currentUser.email;
+    $('org-name-display').innerText = currentUser.orgName || 'Organization';
     
-    if (currentUser.role === 'ADMIN') show('admin-tools');
-    else hide('admin-tools');
+    if (currentUser.role === 'ADMIN') {
+      show('admin-controls');
+    } else {
+      hide('admin-controls');
+    }
     
-    loadTasks();
+    fetchTasks();
   } else {
     show('auth-section');
     hide('dashboard-section');
+    // Ensure we start on the login form for better UX
     showLoginForm();
   }
 }
@@ -529,28 +534,45 @@ async function viewLogs() {
   }
 }
 
-// --- EVENTS ---
+// --- INITIALIZATION ---
 window.onload = () => {
-  renderApp();
-  
+    console.log('🏁 Initializing NexusTask Application');
+    
+    // Check for existing session
+    const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem('token');
+    
+    if (savedUser && savedToken) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            currentToken = savedToken;
+            console.log('👋 Welcome back,', currentUser.email);
+        } catch (e) {
+            console.error('Session corruption detected, clearing store');
+            localStorage.clear();
+        }
+    }
+    
+    renderApp();
+    setupEventListeners();
+    
+    // Background tasks
+    setInterval(refreshInboxCount, 5000); // Check for virtual mail every 5s
+};
+
+function setupEventListeners() {
   $('btn-login').onclick = login;
+  $('btn-show-register').onclick = showRegisterForm;
+  $('btn-show-login').onclick = showLoginForm;
   $('btn-register').onclick = register;
   $('btn-logout').onclick = logout;
-  $('show-register').onclick = e => { e.preventDefault(); showRegisterForm(); };
-  $('show-login').onclick = e => { e.preventDefault(); showLoginForm(); };
-  
-  $('btn-add-task').onclick = () => openTaskModal();
-  $('btn-cancel-task').onclick = closeTaskModal;
-  $('btn-save-task').onclick = saveTask;
-  $('btn-delete-task').onclick = deleteTask;
-  $('btn-close-logs').onclick = () => hide('logs-modal');
   $('btn-view-logs').onclick = viewLogs;
-
-  // Recovery Events
+  $('btn-close-logs').onclick = () => hide('logs-modal');
+  
   $('show-forgot-pass').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
   $('back-to-login').onclick = e => { e.preventDefault(); showLoginForm(); };
-  $('btn-send-reset').onclick = requestPasswordReset;
-  $('btn-reset-confirm').onclick = confirmPasswordReset;
+  $('show-register').onclick = e => { e.preventDefault(); showRegisterForm(); };
+  $('show-login').onclick = e => { e.preventDefault(); showLoginForm(); };
   
   // Virtual Inbox Events
   $('btn-demo-inbox').onclick = viewDemoInbox;

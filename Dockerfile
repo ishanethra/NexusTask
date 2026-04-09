@@ -1,16 +1,17 @@
-FROM node:alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
-# No npm install needed as we have no dependencies!
-# Just copy the source code
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install --production
+
+# Copy the rest of the application
 COPY . .
 
-# Expose the port the server runs on
+# Expose the port
 EXPOSE 3000
 
-# Set environment variables if needed
 ENV NODE_ENV=production
 
-# Start the server
 CMD ["node", "server/index.js"]
