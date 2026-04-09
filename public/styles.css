@@ -28,15 +28,16 @@ body {
 body::before {
   content: '';
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: url('bg.png') no-repeat center center fixed;
+  top: -5%;
+  left: -5%;
+  width: 110%;
+  height: 110%;
+  background: url('bg.png') no-repeat center center;
   background-size: cover;
-  opacity: 0.8;
+  opacity: 0.85;
   z-index: -2;
-  filter: contrast(1) brightness(1);
+  filter: contrast(1.1) brightness(0.8) saturate(1.2);
+  animation: bg-drift 60s ease-in-out infinite alternate;
 }
 
 body::after {
@@ -68,7 +69,7 @@ body::after {
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 32px rgba(255, 255, 255, 0.02);
 }
 
 .fade-in { animation: fadeIn 0.4s ease-out; }
@@ -85,6 +86,8 @@ body::after {
   margin: 4rem auto;
   padding: 3rem;
   border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-glow);
 }
 
 .form-group { margin-bottom: 1.5rem; }
