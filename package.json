@@ -1,6 +1,6 @@
 {
   "name": "nexustask",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "description": "Multi-Tenant Task Management Platform",
   "main": "server/index.js",
   "scripts": {
