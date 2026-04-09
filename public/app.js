@@ -208,6 +208,12 @@ function show(id) {
   if (el) el.classList.remove('hidden'); 
 }
 
+function bindClick(id, fn) {
+  const el = $(id);
+  if (el) el.onclick = fn;
+  else console.warn(`⚠️ Warning: Element #${id} not found for binding.`);
+}
+
 function validateEmail(email) {
   return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
 }
@@ -429,8 +435,11 @@ function renderApp() {
   if (currentUser) {
     hide('auth-section');
     show('dashboard-section');
-    $('user-email-display').innerText = currentUser.email;
-    $('org-name-display').innerText = currentUser.orgName || 'Organization';
+    
+    const emailEl = $('user-email-display');
+    const orgEl = $('org-name-display');
+    if (emailEl) emailEl.innerText = currentUser.email || 'user@nexus.task';
+    if (orgEl) orgEl.innerText = currentUser.orgName || 'Organization';
     
     if (currentUser.role === 'ADMIN') {
       show('admin-controls');
@@ -564,35 +573,35 @@ window.onload = () => {
 };
 
 function setupEventListeners() {
-  $('btn-login').onclick = login;
-  $('btn-show-register').onclick = showRegisterForm;
-  $('btn-show-login').onclick = showLoginForm;
-  $('btn-register').onclick = register;
-  $('btn-logout').onclick = logout;
-  $('btn-view-logs').onclick = viewLogs;
-  $('btn-close-logs').onclick = () => hide('logs-modal');
+  bindClick('btn-login', login);
+  bindClick('btn-show-register', showRegisterForm);
+  bindClick('btn-show-login', showLoginForm);
+  bindClick('btn-register', register);
+  bindClick('btn-logout', logout);
+  bindClick('btn-view-logs', viewLogs);
+  bindClick('btn-close-logs', () => hide('logs-modal'));
   
-  $('show-forgot-pass').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
-  $('back-to-login').onclick = e => { e.preventDefault(); showLoginForm(); };
-  $('show-register').onclick = e => { e.preventDefault(); showRegisterForm(); };
-  $('show-login').onclick = e => { e.preventDefault(); showLoginForm(); };
+  bindClick('show-forgot-pass', e => { e.preventDefault(); showForgotPasswordForm(); });
+  bindClick('back-to-login', e => { e.preventDefault(); showLoginForm(); });
+  bindClick('show-register', e => { e.preventDefault(); showRegisterForm(); });
+  bindClick('show-login', e => { e.preventDefault(); showLoginForm(); });
   
   // Recovery Events
-  $('btn-send-reset').onclick = requestPasswordReset;
-  $('btn-reset-confirm').onclick = confirmPasswordReset;
+  bindClick('btn-send-reset', requestPasswordReset);
+  bindClick('btn-reset-confirm', confirmPasswordReset);
   
   // Virtual Inbox Events
-  $('btn-demo-inbox').onclick = viewDemoInbox;
-  $('btn-refresh-inbox').onclick = viewDemoInbox;
-  $('btn-close-inbox').onclick = () => hide('demo-inbox-modal');
-  $('btn-to-reset-form').onclick = showResetPasswordForm;
-  $('retry-recovery').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
+  bindClick('btn-demo-inbox', viewDemoInbox);
+  bindClick('btn-refresh-inbox', viewDemoInbox);
+  bindClick('btn-close-inbox', () => hide('demo-inbox-modal'));
+  bindClick('btn-to-reset-form', showResetPasswordForm);
+  bindClick('retry-recovery', e => { e.preventDefault(); showForgotPasswordForm(); });
 
   // Dashboard / Task Events
-  $('btn-add-task').onclick = () => openTaskModal();
-  $('btn-save-task').onclick = saveTask;
-  $('btn-delete-task').onclick = deleteTask;
-  $('btn-close-task').onclick = closeTaskModal;
+  bindClick('btn-add-task', () => openTaskModal());
+  bindClick('btn-save-task', saveTask);
+  bindClick('btn-delete-task', deleteTask);
+  bindClick('btn-cancel-task', closeTaskModal);
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {
