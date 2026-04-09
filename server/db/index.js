@@ -18,11 +18,7 @@ if (USE_SQL) {
   console.log('\x1b[33m%s\x1b[0m', '⚠️ WARNING: DATABASE MODE: DEMO (JSON File - Data will be lost on Render!)');
 }
 
-/**
- * @function initializePersistenceLayer
- * @description Validates and prepares the storage medium (SQL or JSON) for active operations.
- */
-async function initializePersistenceLayer() {
+async function ensureDataDir() {
   if (USE_SQL) {
     // Initialize SQL Tables if they don't exist
     try {
@@ -40,14 +36,14 @@ async function initializePersistenceLayer() {
   }
 }
 
-/**
- * @function fetchRegistryData
- * @description Retrieves a categorized collection of records from the active storage layer.
- */
-async function fetchRegistryData(collection) {
+// Optimized helper for SQL results
+const first = result => result.rows[0];
+const all = result => result.rows;
+
+async function read(collection) {
   if (USE_SQL) {
     const res = await pool.query(`SELECT * FROM ${collection}`);
-    return res.rows;
+    return all(res);
   } else {
     const filePath = path.join(DB_DIR, `${collection}.json`);
     try {
@@ -59,13 +55,12 @@ async function fetchRegistryData(collection) {
   }
 }
 
-/**
- * @function commitToPersistence
- * @description Synchronizes memory-state data with the physical storage medium.
- */
-async function commitToPersistence(collection, data) {
+async function write(collection, data) {
   if (USE_SQL) {
-    // Transactional SQL logic is handled via atomic queries in the core engine.
+    // In SQL mode, we usually don't "overwrite" the whole array.
+    // However, to keep server logic minimal, we provide a generic table handler
+    // But real production apps would use INSERT/UPDATE in the index.js logic.
+    // We will handle the CRUD logic in the index.js handlers for SQL mode.
     return; 
   } else {
     const filePath = path.join(DB_DIR, `${collection}.json`);
@@ -73,13 +68,10 @@ async function commitToPersistence(collection, data) {
   }
 }
 
-/**
- * @function executeSecureSQL
- * @description Executes a parameterized query against the PostgreSQL cluster with security sanitization.
- */
-async function executeSecureSQL(text, params) {
-  if (!USE_SQL) throw new Error('Persistence Bridge: SQL Mode Inactive');
+// SQL-Specific CRUD Helpers
+async function query(text, params) {
+  if (!USE_SQL) throw new Error('SQL not enabled');
   return pool.query(text, params);
 }
 
-module.exports = { fetchRegistryData, commitToPersistence, initializePersistenceLayer, executeSecureSQL, USE_SQL };
+module.exports = { read, write, ensureDataDir, query, USE_SQL };
