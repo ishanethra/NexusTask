@@ -1,3 +1,6 @@
+const http = require('http');
+const { exec } = require('child_process');
+const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
 const { read, write, ensureDataDir, query, USE_SQL } = require('./db');
