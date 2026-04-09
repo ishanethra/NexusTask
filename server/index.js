@@ -161,7 +161,7 @@ async function handleRegister(res, payload) {
     orgs.push(org); await write('organizations', orgs);
   }
   const existingAdmin = users.find(u => u.orgId === org.id && u.role === 'ADMIN');
-  const newUser = { id: crypto.randomUUID(), email, password: hashPassword(password), role: existingAdmin ? 'MEMBER' : 'ADMIN', orgId: org.id };
+  const newUser = { id: crypto.randomUUID(), email, password_hash: hashPassword(password), role: existingAdmin ? 'MEMBER' : 'ADMIN', orgId: org.id };
   users.push(newUser); await write('users', users);
   res.writeHead(201);
   res.end(JSON.stringify({ message: 'User registered', user: { email, role: newUser.role, orgName } }));
@@ -183,7 +183,7 @@ async function handleLogin(res, payload) {
 
   const users = await read('users');
   const orgs = await read('organizations');
-  const user = users.find(u => u.email === email && u.password === hashPassword(password));
+  const user = users.find(u => u.email === email && u.password_hash === hashPassword(password));
   if (!user) { res.writeHead(401); return res.end(JSON.stringify({ error: 'Invalid email or password' })); }
   const org = orgs.find(o => o.id === user.orgId);
   const token = generateToken({ id: user.id, email: user.email, role: user.role, orgId: user.orgId });
@@ -239,7 +239,7 @@ async function handleOAuth(res, payload) {
     user = {
       id: crypto.randomUUID(),
       email,
-      password: hashPassword('oauth-' + crypto.randomUUID()),
+      password_hash: hashPassword('oauth-' + crypto.randomUUID()),
       role,
       orgId: org.id
     };

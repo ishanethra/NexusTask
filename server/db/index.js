@@ -9,10 +9,13 @@ const USE_SQL = !!process.env.DATABASE_URL;
 // PostgreSQL Pool (only initialized if DATABASE_URL exists)
 let pool = null;
 if (USE_SQL) {
+  console.log('\x1b[32m%s\x1b[0m', '✅ DATABASE MODE: PRODUCTION (PostgreSQL via DATABASE_URL)');
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false } // Required for Neon/Supabase
   });
+} else {
+  console.log('\x1b[33m%s\x1b[0m', '⚠️ WARNING: DATABASE MODE: DEMO (JSON File - Data will be lost on Render!)');
 }
 
 async function ensureDataDir() {
