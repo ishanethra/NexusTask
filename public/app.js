@@ -438,8 +438,16 @@ function renderApp() {
     
     const emailEl = $('user-email-display');
     const orgEl = $('org-name-display');
+    const roleEl = $('user-role-display');
     if (emailEl) emailEl.innerText = currentUser.email || 'user@nexus.task';
     if (orgEl) orgEl.innerText = currentUser.orgName || 'Organization';
+    if (roleEl) {
+      roleEl.innerText = currentUser.role || 'Member';
+      if (currentUser.role === 'ADMIN') {
+        roleEl.style.borderColor = 'var(--accent)';
+        roleEl.style.color = 'white';
+      }
+    }
     
     if (currentUser.role === 'ADMIN') {
       show('admin-controls');
