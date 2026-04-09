@@ -1,65 +1,77 @@
-# NexusTask | Multi-Tenant Platform 🚀
+# 💎 NexusTask | Cinematic Enterprise Task Management 🚀
 
-**NexusTask** is a production-grade, multi-tenant task management ecosystem built with a focus on security, data isolation, and granular Role-Based Access Control (RBAC). Designed for high-performance organizational collaboration, it features a native Google OAuth integration and a sophisticated audit logging engine.
+**NexusTask** is a production-grade, multi-tenant task orchestration platform designed for high-performance organization collaboration. Engineered with a "Persistence-First" philosophy, it features hardened security, sophisticated Role-Based Access Control (RBAC), and a premium glassmorphic aesthetic.
 
 ---
 
-## ✨ Advanced Features
+## ✨ Core Pillars & Advanced Features
 
-### 🛡️ Multi-Tenancy & Data Isolation
-- **Strict Isolation**: Enforced at the architectural level. Users can never view, update, or delete data belonging to a different organization.
-- **Domain-Based Auto-Detection**: Dynamically assigns organizations during OAuth registration.
+### 🛡️ Multi-Tenancy & Data Persistence
+*   **Production PostgreSQL**: Full SQL integration for permanent data storage. Once a user or task is created, it is remembered forever (no more "ephemeral" data on Render).
+*   **Smart Fallback**: The system automatically detects your environment. It uses **PostgreSQL** in production (via `DATABASE_URL`) and seamlessly switches to **JSON mode** for local development.
+*   **Tenant Isolation**: Strict data separation ensures users only ever interact with their own organization's tasks.
 
 ### 🎭 Role-Based Access Control (RBAC)
-- **ADMIN**: Complete organizational oversight. Can manage all tasks and access sensitive audit logs.
-- **MEMBER**: Collaborative access. Can view all team tasks but is restricted to managing only their own contributions.
-- **Identity Enforcement**: Security checks happen on both the UI and the Backend API for absolute compliance.
+*   **ADMIN**: High-contrast, styled badges for global oversight. Admins can manage all tasks and access the **Audit Log Dashboard**.
+*   **MEMBER**: Fully collaborative. Members can view the team progress but are restricted to modifying only their own tasks.
+*   **Task Ownership**: Every task card now explicitly displays **"By: [Creator Email]"**, ensuring total team accountability.
 
-### 🔐 Modern Authentication & Identity
-- **Google OAuth 2.0 Integration**: Native support via Google Identity Services (GSI) with a secure JWT backend.
-- **Password Recovery System**: A professional "Forgot Password" flow with an integrated **Virtual Inbox Simulator** for demonstration purposes.
-- **JWT Security**: Custom implementation of RFC 7519 for stateless, secure session management.
+### 🔐 Identity & Session Resilience
+*   **Self-Healing UI**: The platform core (app.js) is hardened against script crashes. It defensively binds all event listeners to ensure a smooth, zero-failure experience.
+*   **Google OAuth 2.0**: Native support for Google Identity Services (GSI) with automatic domain-based organization onboarding.
+*   **Virtual Inbox Simulator**: A professional "Forgot Password" flow with a real-time, 6-digit security key system and a floating notification inbox.
 
-### 📊 Organizational Audit Logs
-- **Activity Tracking**: Automatic logging of every task creation, status update, and deletion.
-- **Compliance Ready**: Admins can audit team activity to ensure accountability.
+### 📊 Organizational Audit Tracking
+*   **Activity Ledger**: Real-time logging of task creation, status pivots, and deletions.
+*   **Compliance Oversight**: Admins can audit every action to ensure data integrity across the organization.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ The Professional Technology Stack
 
-- **Backend**: Pure Node.js (High-performance, zero-dependency engine).
-- **Authentication**: JWT & PBKDF2 Password Hashing.
-- **Frontend**: Premium UI with Glassmorphism, Cinematic Abstract backgrounds, and smooth Micro-animations.
-- **Containerization**: Optimized Docker & Docker Compose setup for cloud deployment.
+| Layer | Technology | Highlights |
+| :--- | :--- | :--- |
+| **Backend** | **Vanilla Node.js** | High-concurrency engine, zero-dependency core architecture. |
+| **Frontend** | **Modern JS + Vanilla CSS** | Cinematic glassmorphism, abstract animated backgrounds. |
+| **Database** | **PostgreSQL (Prod)** | Permanent relational storage for enterprise reliability. |
+| **Security** | **PBKDF2 + JWT** | Military-grade password hashing and stateless token signing. |
+| **UX** | **UX Fluidity** | Automatic form clearing on transition; defensive error handling. |
 
 ---
 
 ## 📦 Getting Started
 
-### 🐳 Run with Docker (Recommended)
-This is the fastest path to a production-ready instance:
+### 💻 Local Development
 ```bash
-docker-compose up --build
-```
-Access the platform at `http://localhost:3000`.
+# 1. Install dependencies
+npm install
 
-### 💻 Run Locally
-```bash
+# 2. Start the cinematic server
 node server/index.js
 ```
-The server will bind to `0.0.0.0` and automatically attempt to open your default browser.
+*Access the platform at: `http://localhost:3035`*
+
+### 🚀 Production Deployment (Render)
+NexusTask is optimized for **Render.com**. To enable permanent storage:
+1.  Add `DATABASE_URL` as an Environment Variable in your Render Dashboard.
+2.  The server will automatically log: `✅ DATABASE MODE: PRODUCTION`.
 
 ---
 
-## 📬 Demonstration Notes (Virtual Inbox)
-To demonstrate **Password Recovery** without requiring a live SMTP server:
-1. Click **"Forgot Password?"** on the login screen.
-2. Enter your email and request a key.
-3. Click the floating **📬 Demo Inbox** button (bottom-left) to view the incoming virtual mail.
-4. Copy the security code and proceed with the reset.
+## 📬 Key Demonstration Flow: Password Recovery
+To showcase the secure recovery system without needing a real SMTP server:
+1.  Go to the **Login** screen -> click **"Forgot Password?"**.
+2.  Enter your email. Observe the 📬 **Floating Inbox** (bottom-left) notification.
+3.  Open the inbox, copy your **6-digit Security Key**, and use it to reset your password.
+4.  Notice how the forms **automatically clear themselves** for the next user!
 
 ---
 
-## ✅ Compliance & Performance Docs
-This platform has been rigorously tested against strict multi-tenant boundary scenarios to prevent resource leakage, privilege escalation, and cross-site request forgery.
+## ✅ Stability & Compliance
+*   **Resource Integrity**: Tested against memory leakage and session hijacking.
+*   **Visual Excellence**: Zero Layout Shift (ZLS) and modern Google Typography (Inter).
+*   **Browser Resilience**: Fully responsive from mobile to ultra-wide displays.
+
+---
+
+*Designed for the next generation of collaborative task management.* 🛰️
