@@ -387,7 +387,7 @@ async function loadTasks() {
             const name = (task.creatorEmail || 'Unknown').split('@')[0];
             return name.toLowerCase().includes('admin') ? 'Admin' : name.charAt(0).toUpperCase() + name.slice(1);
           })()}</span>
-          <span>${new Date(task.createdAt).toLocaleDateString()}</span>
+          <span>${new Date(task.createdAt || task.created_at || Date.now()).toLocaleDateString()}</span>
         </div>
       `;
       card.onclick = () => openTaskModal(task);
