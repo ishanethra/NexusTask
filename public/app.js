@@ -172,7 +172,7 @@ async function mockApi(path, method, body) {
   
   if (path === '/forgot-password') {
     const user = MOCK_DB.users.find(u => u.email === body.email);
-    if (!user) return { message: 'If that email is registered, you will receive a code.' };
+    if (!user) throw new Error('No account found with this email address.');
     const key = Math.floor(100000 + Math.random() * 900000).toString();
     MOCK_DB.recovery_tokens.push({ email: body.email, key, expires: Date.now() + 3600000 });
     saveMock();

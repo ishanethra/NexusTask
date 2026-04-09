@@ -230,10 +230,8 @@ async function handleForgotPassword(res, payload) {
   const user = users.find(u => u.email === email);
 
   if (!user) {
-    // Security: Don't reveal if user exists. 
-    // But for demo purposes, we can provide a nice message.
-    res.writeHead(200);
-    return res.end(JSON.stringify({ message: 'If that email is registered, you will receive a code.' }));
+    res.writeHead(404);
+    return res.end(JSON.stringify({ error: 'No account found with this email address.' }));
   }
 
   const resetKey = Math.floor(100000 + Math.random() * 900000).toString();
