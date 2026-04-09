@@ -470,6 +470,8 @@ function showForgotPasswordForm() {
   show('forgot-password-form');
   hide('reset-password-form');
   hide('check-email-screen');
+  
+  if ($('forgot-email')) $('forgot-email').value = '';
 }
 
 function showCheckEmailScreen() {
@@ -486,6 +488,9 @@ function showResetPasswordForm() {
   hide('forgot-password-form');
   show('reset-password-form');
   hide('check-email-screen');
+  
+  if ($('reset-key')) $('reset-key').value = '';
+  if ($('reset-new-password')) $('reset-new-password').value = '';
 }
 
 function showLoginForm() {
@@ -494,6 +499,9 @@ function showLoginForm() {
   hide('reset-password-form');
   hide('check-email-screen');
   show('login-form');
+  
+  if ($('login-email')) $('login-email').value = '';
+  if ($('login-password')) $('login-password').value = '';
 }
 
 function showRegisterForm() {
@@ -502,6 +510,10 @@ function showRegisterForm() {
   hide('reset-password-form');
   hide('check-email-screen');
   show('register-form');
+  
+  if ($('reg-org')) $('reg-org').value = '';
+  if ($('reg-email')) $('reg-email').value = '';
+  if ($('reg-password')) $('reg-password').value = '';
 }
 
 function openTaskModal(task = null) {
