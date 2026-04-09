@@ -8,6 +8,7 @@ if (IS_FILE_PROTOCOL) {
 
 let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let currentToken = localStorage.getItem('token') || null;
+let resetEmail = ''; // Store email during recovery flow
 
 // Simple hash simulation for Mock Mode
 const hashSim = str => btoa('salt-' + str).split('').reverse().join('');
@@ -285,6 +286,7 @@ async function requestPasswordReset() {
   
   try {
     const data = await api('/forgot-password', 'POST', { email });
+    resetEmail = email; // Save for next step
     showToast('Reset request received!', 'success');
     showCheckEmailScreen();
     setTimeout(refreshInboxCount, 500); // Immediate check
@@ -335,10 +337,11 @@ async function viewDemoInbox() {
 }
 
 async function confirmPasswordReset() {
-  const email = $('forgot-email').value;
+  const email = resetEmail; // Use saved email
   const key = $('reset-key').value;
   const newPassword = $('reset-new-password').value;
   
+  if (!email) return showToast('Session expired. Please restart reset flow.', 'error');
   if (!key || !newPassword) return showToast('Key and New Password are required', 'error');
   if (!validatePassword(newPassword)) return showToast('Password must be 8+ characters with a number', 'error');
 
@@ -574,6 +577,10 @@ function setupEventListeners() {
   $('show-register').onclick = e => { e.preventDefault(); showRegisterForm(); };
   $('show-login').onclick = e => { e.preventDefault(); showLoginForm(); };
   
+  // Recovery Events
+  $('btn-send-reset').onclick = requestPasswordReset;
+  $('btn-reset-confirm').onclick = confirmPasswordReset;
+  
   // Virtual Inbox Events
   $('btn-demo-inbox').onclick = viewDemoInbox;
   $('btn-refresh-inbox').onclick = viewDemoInbox;
@@ -582,8 +589,7 @@ function setupEventListeners() {
   $('retry-recovery').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
 
   // Background Polling for Virtual Inbox
-  setInterval(refreshInboxCount, 5000); // Check every 5s
-  refreshInboxCount(); // Initial Check
+  refreshInboxCount(); // Initial Check logic is already in window.onload interval
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {

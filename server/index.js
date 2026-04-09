@@ -214,8 +214,43 @@ async function handleOAuth(res, payload) {
     res.writeHead(200);
     return res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: user.orgName } }));
   }
-  
-  // JSON Fallback would go here (omitted for brevity but kept in master file)
+
+  // --- JSON Fallback ---
+  const users = await read('users');
+  const orgs = await read('organizations');
+  let user = users.find(u => u.email === email);
+
+  if (!user) {
+    // Determine Org from Email Domain
+    const domain = email.split('@')[1] || 'google.com';
+    const orgName = domain.split('.')[0].toUpperCase();
+    
+    let org = orgs.find(o => o.name === orgName);
+    if (!org) {
+      org = { id: crypto.randomUUID(), name: orgName };
+      orgs.push(org);
+      await write('organizations', orgs);
+    }
+
+    // Role Assignment
+    const existingAdmin = users.find(u => u.orgId === org.id && u.role === 'ADMIN');
+    const role = existingAdmin ? 'MEMBER' : 'ADMIN';
+
+    user = {
+      id: crypto.randomUUID(),
+      email,
+      password: hashPassword('oauth-' + crypto.randomUUID()),
+      role,
+      orgId: org.id
+    };
+    users.push(user);
+    await write('users', users);
+  }
+
+  const org = orgs.find(o => o.id === user.orgId);
+  const token = generateToken({ id: user.id, email: user.email, role: user.role, orgId: user.orgId });
+  res.writeHead(200);
+  res.end(JSON.stringify({ token, user: { id: user.id, email: user.email, role: user.role, orgName: org.name } }));
 }
 
 async function handleForgotPassword(res, payload) {
@@ -247,7 +282,26 @@ async function handleResetPassword(res, payload) {
     await query('DELETE FROM recovery_tokens WHERE id = $1', [tokenRes.rows[0].id]);
     res.writeHead(200); return res.end(JSON.stringify({ message: 'Success!' }));
   }
-  // JSON Fallback logic
+  
+  // --- JSON Fallback ---
+  const tokens = await read('recovery_tokens');
+  const tokenIndex = tokens.findIndex(t => t.email === email && t.key === key && t.expires > Date.now());
+
+  if (tokenIndex === -1) {
+    res.writeHead(400); return res.end(JSON.stringify({ error: 'Invalid or expired recovery key.' }));
+  }
+
+  const users = await read('users');
+  const user = users.find(u => u.email === email);
+  if (user) {
+    user.password = hashPassword(newPassword);
+    await write('users', users);
+  }
+  tokens.splice(tokenIndex, 1);
+  await write('recovery_tokens', tokens);
+
+  res.writeHead(200);
+  res.end(JSON.stringify({ message: 'Password reset successful. Please login.' }));
 }
 
 async function handleTasks(req, res, segments, context, payload) {
@@ -292,6 +346,31 @@ async function handleTasks(req, res, segments, context, payload) {
     const newTask = { id: crypto.randomUUID(), ...payload, orgId: user.orgId, createdBy: user.id, createdAt: new Date().toISOString() };
     tasks.push(newTask); await write('tasks', tasks); await logAction(user, 'CREATE_TASK', newTask.id);
     res.writeHead(201); return res.end(JSON.stringify(newTask));
+  }
+
+  const task = tasks.find(t => t.id === taskId && t.orgId === user.orgId);
+  if (!task) {
+    res.writeHead(404); return res.end(JSON.stringify({ error: 'Task not found' }));
+  }
+
+  // RBAC for JSON: Admin or Creator only
+  const canModify = user.role === 'ADMIN' || task.createdBy === user.id;
+
+  if (req.method === 'PUT') {
+    if (!canModify) { res.writeHead(403); return res.end(JSON.stringify({ error: 'Forbidden' })); }
+    Object.assign(task, payload);
+    await write('tasks', tasks);
+    await logAction(user, 'UPDATE_TASK', task.id);
+    res.writeHead(200); return res.end(JSON.stringify(task));
+  }
+
+  if (req.method === 'DELETE') {
+    if (!canModify) { res.writeHead(403); return res.end(JSON.stringify({ error: 'Forbidden' })); }
+    const index = tasks.findIndex(t => t.id === taskId);
+    tasks.splice(index, 1);
+    await write('tasks', tasks);
+    await logAction(user, 'DELETE_TASK', taskId);
+    res.writeHead(204); return res.end();
   }
 }
 
