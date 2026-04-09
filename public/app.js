@@ -438,10 +438,10 @@ function renderApp() {
       hide('admin-controls');
     }
     
-    fetchTasks();
+    loadTasks();
   } else {
-    show('auth-section');
     hide('dashboard-section');
+    show('auth-section');
     // Ensure we start on the login form for better UX
     showLoginForm();
   }
@@ -588,8 +588,11 @@ function setupEventListeners() {
   $('btn-to-reset-form').onclick = showResetPasswordForm;
   $('retry-recovery').onclick = e => { e.preventDefault(); showForgotPasswordForm(); };
 
-  // Background Polling for Virtual Inbox
-  refreshInboxCount(); // Initial Check logic is already in window.onload interval
+  // Dashboard / Task Events
+  $('btn-add-task').onclick = () => openTaskModal();
+  $('btn-save-task').onclick = saveTask;
+  $('btn-delete-task').onclick = deleteTask;
+  $('btn-close-task').onclick = closeTaskModal;
 
   // Password Toggles
   const setupToggle = (btnId, inputId) => {
