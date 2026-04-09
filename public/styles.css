@@ -19,26 +19,14 @@
 }
 
 body {
-  background: var(--bg-dark);
+  background: #0a0a0c url('bg.png') no-repeat center center fixed;
+  background-size: cover;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  top: -5%;
-  left: -5%;
-  width: 110%;
-  height: 110%;
-  background: url('bg.png') no-repeat center center;
-  background-size: cover;
-  opacity: 0.85;
-  z-index: -2;
-  filter: contrast(1.1) brightness(0.8) saturate(1.2);
-  animation: bg-drift 60s ease-in-out infinite alternate;
-}
+/* Background handled in body */
 
 body::after {
   content: '';
